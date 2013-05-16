@@ -1,25 +1,24 @@
+//Copyright (c) Microsoft Corporation
+//
+//All rights reserved.
+//
+//THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABLITY, OR NON-INFRINGEMENT.
+
 #pragma once
 #include "httpbasedtransport.h"
-class LongPollingTransport :
-    public HttpBasedTransport
+
+namespace MicrosoftAspNetSignalRClientCpp
 {
-public:
-    LongPollingTransport(IHttpClient* httpClient);
-    ~LongPollingTransport(void);
-
-    void Start(Connection* connection, START_CALLBACK startCallback, string data, void* state = NULL);
-    void Abort(Connection* connection);
-
-    struct PollHttpRequestInfo
+    class LongPollingTransport :
+        public HttpBasedTransport
     {
-        START_CALLBACK Callback;
-        void* CallbackState;
-        LongPollingTransport* Transport;
-        Connection* Connection;
-        string Data;
+    public:
+        LongPollingTransport(shared_ptr<IHttpClient> httpClient);
+        ~LongPollingTransport();
+
+    protected:
+        void OnStart(shared_ptr<Connection> connection, string_t data, pplx::cancellation_token disconnectToken, shared_ptr<TransportInitializationHandler> initializeHandler);
+        void OnAbort();
+        void LostConnection(shared_ptr<Connection> connection);
     };
-
-private:
-    static void OnPollHttpResponse(IHttpResponse* httpResponse, exception* error, void* state);
-};
-
+} // namespace MicrosoftAspNetSignalRClientCpp

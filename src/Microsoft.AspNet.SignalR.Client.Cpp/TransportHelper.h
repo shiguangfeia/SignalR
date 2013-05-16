@@ -1,29 +1,36 @@
+//Copyright (c) Microsoft Corporation
+//
+//All rights reserved.
+//
+//THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABLITY, OR NON-INFRINGEMENT.
+
 #pragma once
 
-#include <string>
-#include "IHttpClient.h"
-#include "IClientTransport.h"
 #include "Connection.h"
+#include "StringHelper.h"
 
 using namespace std;
+using namespace pplx;
+using namespace utility;
+using namespace web::json;
 
-class TransportHelper
+namespace MicrosoftAspNetSignalRClientCpp
 {
-public:
-    TransportHelper(void);
-    ~TransportHelper(void);
-
-    static void GetNegotiationResponse(IHttpClient* httpClient, Connection* connnection, IClientTransport::NEGOTIATE_CALLBACK negotiateCallback, void* state = NULL);
-    static string GetReceiveQueryString(Connection* connection, string data, string transport);
-    static void ProcessMessages(Connection* connection, string raw, bool* timedOut, bool* disconnected);
-
-private:
-    struct NegotiationRequestInfo
+    class TransportHelper
     {
-        void* UserState;
-        IClientTransport::NEGOTIATE_CALLBACK Callback;
+    public:
+        TransportHelper();
+        ~TransportHelper();
+
+        static pplx::task<shared_ptr<NegotiationResponse>> GetNegotiationResponse(shared_ptr<IHttpClient> client, shared_ptr<Connection> connnection);
+        static string_t GetReceiveQueryString(shared_ptr<Connection> connection, string_t data, string_t transport);
+        static string_t AppendCustomQueryString(shared_ptr<Connection> connection, string_t baseUrl);
+        static void ProcessResponse(shared_ptr<Connection> connection, string_t response, bool* timedOut, bool* disconnected);
+        static void ProcessResponse(shared_ptr<Connection> connection, string_t response, bool* timedOut, bool* disconnected, function<void()> onInitialized);
+        static string_t GetSendQueryString(string_t transport, string_t connectionToken, string_t customQuery);
+
+    private:
+        static void UpdateGroups(shared_ptr<Connection> connection, string_t groupsToken);
+        static void TryInitialize(value response, function<void()> onInitialized);
     };
-
-    static void OnNegotiateHttpResponse(IHttpResponse* httpResponse, exception* error, void* state);
-};
-
+} // namespace MicrosoftAspNetSignalRClientCpp

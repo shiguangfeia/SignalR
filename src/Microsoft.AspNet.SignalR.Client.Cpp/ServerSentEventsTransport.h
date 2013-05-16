@@ -1,40 +1,46 @@
+//Copyright (c) Microsoft Corporation
+//
+//All rights reserved.
+//
+//THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABLITY, OR NON-INFRINGEMENT.
+
 #pragma once
 
-
 #include "HttpBasedTransport.h"
+#include "EventSourceStreamReader.h"
+#include "ThreadSafeInvoker.h"
+#include "TaskAsyncHelper.h"
 
+using namespace utility;
+
+namespace MicrosoftAspNetSignalRClientCpp
+{
 class ServerSentEventsTransport : 
     public HttpBasedTransport
 {
-public:
-    ServerSentEventsTransport(IHttpClient* client);
-    ~ServerSentEventsTransport(void);
+    public:
+        ServerSentEventsTransport(shared_ptr<IHttpClient> client);
+        ~ServerSentEventsTransport();
+    
+        bool SupportsKeepAlive();
 
-    void Start(Connection* connection, START_CALLBACK startCallback, string data, void* state = NULL);
-    void Abort(Connection* connection);
+    protected:
+        void OnStart(shared_ptr<Connection> connection, string_t data, pplx::cancellation_token disconnectToken, shared_ptr<TransportInitializationHandler> initializeHandler);
+        void OnAbort();
+        void LostConnection(shared_ptr<Connection> connection);
 
-    struct HttpRequestInfo
-    {
-        START_CALLBACK Callback;
-        void* CallbackState;
-        ServerSentEventsTransport* Transport;
-        Connection* Connection;
-        string Data;
+    private:
+        bool mStop;
+        seconds mConnectionTimeout;
+        seconds mReconnectDelay;
+        mutex mDeregisterRequestCancellationLock;
+        function<void()> DeregisterRequestCancellation;
+        shared_ptr<HttpRequestWrapper> pRequest;
+        unique_ptr<EventSourceStreamReader> pEventSource;
+        unique_ptr<ThreadSafeInvoker> pCallbackInvoker;
+        shared_ptr<TransportInitializationHandler> pInitializeHandler;
+
+        void Reconnect(shared_ptr<Connection> connection, string_t data, pplx::cancellation_token disconnectToken);
+        void OpenConnection(shared_ptr<Connection> connection, string_t data, pplx::cancellation_token disconnectToken, function<void()> initializeCallback, function<void(exception)> errorCallback);
     };
-
-    struct ReadInfo
-    {
-        Connection* Connection;
-        IHttpResponse* HttpResponse;
-        ServerSentEventsTransport* Transport;
-        HttpRequestInfo* RequestInfo;
-    };
-
-    void ReadLoop(IHttpResponse* httpResponse, Connection* connection, HttpRequestInfo* reqestInfo);
-
-private:
-    static void OnStartHttpResponse(IHttpResponse* httpResponse, exception* error, void* state);
-
-    static void OnReadLine(string data, exception* error, void* state);
-};
-
+} // namespace MicrosoftAspNetSignalRClientCpp

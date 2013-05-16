@@ -1,75 +1,34 @@
+//Copyright (c) Microsoft Corporation
+//
+//All rights reserved.
+//
+//THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABLITY, OR NON-INFRINGEMENT.
+
 #include "LongPollingTransport.h"
 
+namespace MicrosoftAspNetSignalRClientCpp
+{
 
-LongPollingTransport::LongPollingTransport(IHttpClient* httpClient) :
-    HttpBasedTransport(httpClient)
+LongPollingTransport::LongPollingTransport(shared_ptr<IHttpClient> httpClient) :
+    HttpBasedTransport(httpClient, U("longPolling"))
 {
 }
 
-
-LongPollingTransport::~LongPollingTransport(void)
+LongPollingTransport::~LongPollingTransport()
 {
 }
 
-void LongPollingTransport::Start(Connection* connection, START_CALLBACK startCallback, string data, void* state)
-{    
-    string url = connection->GetUrl();
-
-    if(startCallback != NULL)
-    {
-        url += "connect";
-    }
-
-    // TODO: Handle reconnect
-
-    url += TransportHelper::GetReceiveQueryString(connection, data, "longPolling");
-
-    auto info = new PollHttpRequestInfo();
-    info->CallbackState = state;
-    info->Transport = this;
-    info->Callback = startCallback;
-    info->Connection = connection;
-    info->Data = data;
-
-    mHttpClient->Get(url, &LongPollingTransport::OnPollHttpResponse, info);
-
-    // TODO: Need to set a timer here to trigger connected after 2 seconds or so
-}
-
-void LongPollingTransport::OnPollHttpResponse(IHttpResponse* httpResponse, exception* error, void* state)
+void LongPollingTransport::OnStart(shared_ptr<Connection> connection, string_t data, pplx::cancellation_token disconnectToken, shared_ptr<TransportInitializationHandler> initializeHandler)
+//void LongPollingTransport::OnStart(shared_ptr<Connection> connection, string_t data, pplx::cancellation_token disconnectToken, function<void()> initializeCallback, function<void()> errorCallback)
 {
-    auto pollInfo = (PollHttpRequestInfo*)state;
-    bool timedOut, disconnected;
-
-    if(NULL != error)
-    {
-        if(pollInfo->Callback != NULL)
-        {
-            pollInfo->Callback(NULL, pollInfo->CallbackState);
-        }
-        
-        TransportHelper::ProcessMessages(pollInfo->Connection, httpResponse->GetResponseBody(), &timedOut, &disconnected);
-    }
-    else
-    {
-        if(pollInfo->Callback != NULL) 
-        {
-            pollInfo->Callback(error, pollInfo->CallbackState);
-        }
-        else
-        {
-            pollInfo->Connection->OnError(*error);
-        }
-    }
-
-    if(disconnected)
-    {
-        pollInfo->Connection->Stop();
-    }
-    else
-    {
-        pollInfo->Transport->Start(pollInfo->Connection, NULL, pollInfo->Data);
-    }
-
-    delete pollInfo;
 }
+
+void LongPollingTransport::OnAbort()
+{
+}
+
+void LongPollingTransport::LostConnection(shared_ptr<Connection> connection)
+{
+}
+
+} // namespace MicrosoftAspNetSignalRClientCpp
