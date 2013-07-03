@@ -186,7 +186,7 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                 using (connection)
                 {
-                    connection.Received += (arg) =>
+                    connection.Received += arg =>
                     {
                         JObject headers = JsonConvert.DeserializeObject<JObject>(arg);
                         if (transportType != TransportType.Websockets)
@@ -221,25 +221,36 @@ namespace Microsoft.AspNet.SignalR.Tests
         [Theory]
         [InlineData(HostType.IISExpress, TransportType.LongPolling)]
         [InlineData(HostType.IISExpress, TransportType.ServerSentEvents)]
-        [InlineData(HostType.IISExpress, TransportType.Websockets)]
         [InlineData(HostType.HttpListener, TransportType.LongPolling)]
         [InlineData(HostType.HttpListener, TransportType.ServerSentEvents)]
-        [InlineData(HostType.HttpListener, TransportType.Websockets)]
-        public void RequestHeadersCannotBeSetOnceConnected(HostType hostType, TransportType transportType)
+        public void RequestHeadersCanBeSetOnceConnected(HostType hostType, TransportType transportType)
         {
             using (var host = CreateHost(hostType, transportType))
             {
                 // Arrange
                 host.Initialize();
                 var connection = CreateConnection(host, "/examine-request");
+                var mre = new ManualResetEventSlim();
 
                 using (connection)
                 {
+                    connection.Received += arg =>
+                    {
+                        JObject headers = JsonConvert.DeserializeObject<JObject>(arg);
+                        Assert.Equal("test-header", (string)headers["testHeader"]);
+
+                        mre.Set();
+                    };
+
                     connection.Start(host.Transport).Wait();
 
-                    var ex = Assert.Throws<InvalidOperationException>(() => connection.Headers.Add("test-header", "test-header"));
-                    Assert.Equal("Request headers cannot be set after the connection has started.", ex.Message);
+                    connection.Headers.Add("test-header", "test-header");
+                    connection.Send("message");
+
+                    // Assert
+                    Assert.True(mre.Wait(TimeSpan.FromSeconds(10)));
                 }
+
             }
         }
 
