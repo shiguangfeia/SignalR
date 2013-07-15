@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Routing;
@@ -11,6 +13,8 @@ using Microsoft.AspNet.SignalR.Tests.Common;
 using Microsoft.AspNet.SignalR.Tests.Common.Connections;
 using Microsoft.AspNet.SignalR.Tests.Common.Handlers;
 using Microsoft.Owin;
+using Microsoft.Owin.Security.Infrastructure;
+using Microsoft.Owin.Security.OAuth;
 using Owin;
 
 [assembly: PreApplicationStartMethod(typeof(Initializer), "Start")]
@@ -126,6 +130,116 @@ namespace Microsoft.AspNet.SignalR.Tests.Common
             app.Map("/basicauth", subApp =>
             {
                 subApp.UseBasicAuthentication(new BasicAuthenticationProvider());
+
+                var subConfig = new ConnectionConfiguration
+                {
+                    Resolver = resolver
+                };
+
+                subApp.MapConnection<AuthenticatedEchoConnection>("/echo", subConfig);
+
+                var subHubsConfig = new HubConfiguration
+                {
+                    Resolver = resolver
+                };
+
+                subApp.MapHubs(subHubsConfig);
+            });
+
+            // This subpipeline is protected by basic auth and oauth
+            app.Map("/oauth", subApp =>
+            {
+                var authorizationProvider = new OAuthAuthorizationServerProvider();
+                authorizationProvider.OnAuthorizeEndpoint = context =>
+                {
+                    Console.WriteLine("OAuthAuthorizationServerProvider.OnAuthorizeEndpoint");
+                    return Task.FromResult<object>(null);
+                };
+                authorizationProvider.OnLookupClient = context =>
+                {
+                    Console.WriteLine("OAuthAuthorizationServerProvider.OnLookupClient");                    
+                    string clientId = "user";
+                    string clientPassword = "password";
+                    string redirectUri = null;
+
+                    if (context.RequestDetails.ClientId == clientId)
+                    {
+                        context.ClientFound(clientPassword, redirectUri);
+                    }
+                    
+                    return Task.FromResult<object>(null);
+                };
+                authorizationProvider.OnTokenEndpoint = context =>
+                {
+                    Console.WriteLine("OAuthAuthorizationServerProvider.OnTokenEndpoint");
+                    return Task.FromResult<object>(null);
+                };
+                authorizationProvider.OnValidateClientCredentials = context =>
+                {
+                    Console.WriteLine("OAuthAuthorizationServerProvider.OnValidateClientCredentials");
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimsIdentity.DefaultNameClaimType, context.ClientId),
+                        new Claim(ClaimsIdentity.DefaultRoleClaimType, "userRole"),
+                    };
+                    if (!string.IsNullOrEmpty(context.Scope))
+                    {
+                        claims.Add(new Claim("scope", context.Scope));
+                    }
+                    context.Validated(new ClaimsIdentity(claims, "Bearer"), new Dictionary<string, string>());
+
+                    return Task.FromResult<object>(null);
+                };
+                authorizationProvider.OnValidateResourceOwnerCredentials = context =>
+                {
+                    Console.WriteLine("OAuthAuthorizationServerProvider.OnValidateResourceOwnerCredentials");
+                    return Task.FromResult<object>(null);
+                };
+
+                var tokenProvider = new AuthenticationTokenProvider();
+                tokenProvider.OnCreate = context =>
+                {
+                    Console.WriteLine("AuthenticationTokenProvider.OnCreate");
+                };
+                tokenProvider.OnCreateAsync = context =>
+                {
+                    Console.WriteLine("AuthenticationTokenProvider.OnCreateAsync");
+                    return Task.FromResult<object>(null);
+                };
+                tokenProvider.OnReceive = context =>
+                {
+                    Console.WriteLine("AuthenticationTokenProvider.OnReceive");
+                };
+                tokenProvider.OnReceiveAsync = context =>
+                {
+                    Console.WriteLine("AuthenticationTokenProvider.OnReceiveAsync");
+                    return Task.FromResult<object>(null);
+                };
+
+                var authorizationOptions = new OAuthAuthorizationServerOptions();
+                //authorizationOptions.AuthorizeEndpointPath = "/authorize";
+                authorizationOptions.TokenEndpointPath = "/token";
+                authorizationOptions.Provider = authorizationProvider;
+                authorizationOptions.AuthenticationCodeProvider = tokenProvider;
+
+                var bearerProvider = new OAuthBearerAuthenticationProvider();
+                bearerProvider.OnValidateIdentity = context =>
+                {
+                    Console.WriteLine("OAuthBearerAuthenticationProvider.OnValidateIdentity");
+                    if (!context.Identity.IsAuthenticated)
+                    {
+                        throw new InvalidOperationException("user is not authenticated");
+                    }
+
+                    return Task.FromResult<object>(null);
+                };
+
+                var bearerOptions = new OAuthBearerAuthenticationOptions();
+                bearerOptions.AccessTokenProvider = authorizationOptions.AccessTokenProvider;
+                bearerOptions.Provider = bearerProvider;
+
+                subApp.UseOAuthAuthorizationServer(authorizationOptions);
+                subApp.UseOAuthBearerAuthentication(bearerOptions);
 
                 var subConfig = new ConnectionConfiguration
                 {

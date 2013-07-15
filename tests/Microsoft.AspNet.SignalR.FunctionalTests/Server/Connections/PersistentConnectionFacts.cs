@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Configuration;
-using Microsoft.AspNet.SignalR.FunctionalTests;
 using Microsoft.AspNet.SignalR.Hosting.Memory;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Tests.Common;
@@ -154,6 +156,58 @@ namespace Microsoft.AspNet.SignalR.Tests
                     {
                         connection.Credentials = new System.Net.NetworkCredential("user", "password");
 
+                        connection.Received += data =>
+                        {
+                            tcs.TrySetResult(data);
+                        };
+
+                        connection.Start(host.Transport).Wait();
+
+                        connection.SendWithTimeout("Hello World");
+
+                        Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(10)));
+                        Assert.Equal("Hello World", tcs.Task.Result);
+                    }
+                }
+            }
+
+            [Theory]
+            //[InlineData(HostType.IISExpress, TransportType.Websockets)]
+            [InlineData(HostType.IISExpress, TransportType.ServerSentEvents)]
+            [InlineData(HostType.IISExpress, TransportType.LongPolling)]
+            //[InlineData(HostType.HttpListener, TransportType.Websockets)]
+            [InlineData(HostType.HttpListener, TransportType.ServerSentEvents)]
+            [InlineData(HostType.HttpListener, TransportType.LongPolling)]
+            public void OAuthCredentialsFlow(HostType hostType, TransportType transportType)
+            {
+                using (var host = CreateHost(hostType, transportType))
+                {
+                    host.Initialize();
+
+                    string json = null;
+
+                    using (var httpClient = new HttpClient())
+                    {
+                        string url = host.Url.Replace("localhost", "localhost.fiddler");
+                        var request = new HttpRequestMessage(HttpMethod.Post, url + "/oauth/token");
+                        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes("user:password")));
+                        request.Content = new StringContent("grant_type=client_credentials", Encoding.UTF8, "application/x-www-form-urlencoded");
+                        var response = httpClient.SendAsync(request).Result;
+                        
+                        Assert.True(response.StatusCode == System.Net.HttpStatusCode.OK, "Failed to authenticate");
+
+                        json = response.Content.ReadAsStringAsync().Result;
+                    }
+                    
+                    var token = JToken.Parse(json);
+                    var bearerToken = token.Value<string>("access_token");
+
+                    var connection = CreateConnection(host, "/oauth/echo");
+                    connection.Headers.Add("Authorization", "Bearer " + bearerToken);
+                    var tcs = new TaskCompletionSource<string>();
+
+                    using (connection)
+                    {
                         connection.Received += data =>
                         {
                             tcs.TrySetResult(data);
