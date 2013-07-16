@@ -1,5 +1,5 @@
 /*!
- * ASP.NET SignalR JavaScript Library v1.1.2
+ * ASP.NET SignalR JavaScript Library v1.1.3
  * http://signalr.net/
  *
  * Copyright Microsoft Open Technologies, Inc. All rights reserved.
@@ -371,6 +371,28 @@
             /// <param name=\"connectionId\" type=\"String\">Server side type is System.String</param>
             /// <param name=\"groupName\" type=\"String\">Server side type is System.String</param>
                 return proxies.hubConnectionAPI.invoke.apply(proxies.hubConnectionAPI, $.merge(["LeaveGroup"], $.makeArray(arguments)));
+             },
+
+            manualResetEventReset: function () {
+            /// <summary>Calls the ManualResetEventReset method on the server-side HubConnectionAPI hub.&#10;Returns a jQuery.Deferred() promise.</summary>
+                return proxies.hubConnectionAPI.invoke.apply(proxies.hubConnectionAPI, $.merge(["ManualResetEventReset"], $.makeArray(arguments)));
+             },
+
+            manualResetEventSet: function () {
+            /// <summary>Calls the ManualResetEventSet method on the server-side HubConnectionAPI hub.&#10;Returns a jQuery.Deferred() promise.</summary>
+                return proxies.hubConnectionAPI.invoke.apply(proxies.hubConnectionAPI, $.merge(["ManualResetEventSet"], $.makeArray(arguments)));
+             },
+
+            returnPrimitive: function (value) {
+            /// <summary>Calls the ReturnPrimitive method on the server-side HubConnectionAPI hub.&#10;Returns a jQuery.Deferred() promise.</summary>
+            /// <param name=\"value\" type=\"Number\">Server side type is System.Int32</param>
+                return proxies.hubConnectionAPI.invoke.apply(proxies.hubConnectionAPI, $.merge(["ReturnPrimitive"], $.makeArray(arguments)));
+             },
+
+            returnTask: function (value) {
+            /// <summary>Calls the ReturnTask method on the server-side HubConnectionAPI hub.&#10;Returns a jQuery.Deferred() promise.</summary>
+            /// <param name=\"value\" type=\"Number\">Server side type is System.Int32</param>
+                return proxies.hubConnectionAPI.invoke.apply(proxies.hubConnectionAPI, $.merge(["ReturnTask"], $.makeArray(arguments)));
              }
         };
 

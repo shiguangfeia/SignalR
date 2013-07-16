@@ -10,6 +10,7 @@ namespace Microsoft.AspNet.SignalR.Samples
     {
         protected void Application_Start(object sender, EventArgs e)
         {
+            GlobalHost.Configuration.KeepAlive = null;
             SignalRConfig.ConfigureSignalR(GlobalHost.DependencyResolver, GlobalHost.HubPipeline);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BackgroundThread.Start();

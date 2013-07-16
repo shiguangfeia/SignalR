@@ -1,7 +1,7 @@
 /* jquery.signalR.core.js */
 /*global window:false */
 /*!
- * ASP.NET SignalR JavaScript Library v1.1.2
+ * ASP.NET SignalR JavaScript Library v1.1.3
  * http://signalr.net/
  *
  * Copyright Microsoft Open Technologies, Inc. All rights reserved.
@@ -1837,8 +1837,9 @@
         return false;
     }
 
-    function clearInvocationCallbacks(connection, error) {
+    function clearInvocationCallbacks(connection, error) {        
         var callback;
+        connection.log("clearInvocationCallbacks");
         for (var callbackId in connection._.invocationCallbacks) {
             callback = connection._.invocationCallbacks[callbackId];
             callback.method.call(callback.scope, { E: error });

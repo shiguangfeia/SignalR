@@ -102,6 +102,40 @@ $(function () {
         });
     });
 
+    $("#set").click(function () {
+        hubConnectionAPI.server.manualResetEventSet()
+            .done(function () {
+                console.log("set: ok");
+            })
+            .fail(function () {
+                console.log("set: failed");
+            });
+    });
+
+    $("#reset").click(function () {
+        hubConnectionAPI.server.manualResetEventReset()
+            .done(function () {
+                console.log("reset: ok");
+            })
+            .fail(function () {
+                console.log("reset: failed");
+            });
+    });
+
+    $("#longRunning").click(function () {
+        console.log("sending 50,000 invocations...");
+        for (var i = 0; i < 50000; i++) {
+            hubConnectionAPI.server.returnTask(i)
+                .done(function (data) {
+                    //console.log("returnTask: " + data);
+                })
+                .fail(function () {
+                    //console.log("returnTask: failed");
+                });
+        }
+        console.log("invocations started");
+    });
+
     $("#broadcast").click(function () {
         hubConnectionAPI.server.displayMessageAll(messageTextInput.val()).fail(function (e) {
             $("<li/>").html("Failed at getMessage: " + e).appendTo(messages);

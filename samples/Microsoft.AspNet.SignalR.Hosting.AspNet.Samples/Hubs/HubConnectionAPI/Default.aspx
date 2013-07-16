@@ -28,9 +28,9 @@
         <h4>To Everybody</h4>
         <div>
             <input type="text" id="message" placeholder="Message" />
-            <input type="button" id="broadcast" class="btn" value="Broadcast" />
-            <input type="button" id="broadcastExceptSpecified" class="btn" value="Broadcast (All Except specified Connection)" />
-            <input type="button" id="other" class="btn" value="Other (Everyone but me)" />
+            <input type="button" id="longRunning" class="btn" value="LongRunning" />
+            <input type="button" id="set" class="btn" value="Set" />
+            <input type="button" id="reset" class="btn" value="Reset" />
         </div>
     </div>
 

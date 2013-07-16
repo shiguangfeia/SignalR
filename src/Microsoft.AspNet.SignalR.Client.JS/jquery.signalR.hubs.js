@@ -41,8 +41,9 @@
         return false;
     }
 
-    function clearInvocationCallbacks(connection, error) {
+    function clearInvocationCallbacks(connection, error) {        
         var callback;
+        connection.log("clearInvocationCallbacks");
         for (var callbackId in connection._.invocationCallbacks) {
             callback = connection._.invocationCallbacks[callbackId];
             callback.method.call(callback.scope, { E: error });

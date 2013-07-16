@@ -1,9 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.AspNet.SignalR.Hosting.AspNet.Samples.Hubs.HubConnectionAPI
 {
     public class HubConnectionAPI : Hub
     {
+        private static ManualResetEvent mre = new ManualResetEvent(false);
+
         public string JoinGroup(string connectionId, string groupName)
         {
             Groups.Add(connectionId, groupName).Wait();
@@ -14,6 +18,31 @@ namespace Microsoft.AspNet.SignalR.Hosting.AspNet.Samples.Hubs.HubConnectionAPI
         {
             Groups.Remove(connectionId, groupName).Wait();
             return connectionId + " removed " + groupName;
+        }
+
+        public void ManualResetEventSet()
+        {
+            mre.Set();            
+        }
+
+        public void ManualResetEventReset()
+        {
+            mre.Reset();
+        }
+
+        public Task<int> ReturnTask(int value)
+        {
+            return Task.Run<int>(() =>
+            {
+                mre.WaitOne();
+                return value;
+            });
+        }
+
+        public int ReturnPrimitive(int value)
+        {
+            mre.WaitOne();
+            return value;
         }
 
         public void DisplayMessageAll(string message)
