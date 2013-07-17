@@ -47,7 +47,7 @@
     <IntDir>$(ProjectDir)obj\$(Configuration)\</IntDir>
     <EnableManagedIncrementalBuild>true</EnableManagedIncrementalBuild>
     <IncludePath>$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\cpprestsdk.redist.1.1.0\build\native\bin\Win32\v110\Release\Desktop;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)packages\cpprestsdk.1.1.0.1\build\native\lib\Win32\v110\Release\Desktop;$(SolutionDir)packages\cpprestsdk.redist.1.1.0\build\native\bin\Win32\v110\Release\Desktop;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
